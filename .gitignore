@@ -3,3 +3,5 @@ vacations.json
 report_generator/reports/*.pdf
 .idea
 build
+*.egg-info
+*.egg-info/*
