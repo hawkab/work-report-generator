@@ -7,7 +7,7 @@ import colorlog
 import json
 
 # Загрузка .env
-load_dotenv()
+load_dotenv('./.env')
 
 # Логирование
 log_colors = {
