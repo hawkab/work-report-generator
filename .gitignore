@@ -1,3 +1,4 @@
 .env
 vacations.json
 report_generator/reports/*
+.idea
