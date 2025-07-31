@@ -7,7 +7,7 @@ name = "work-report-generator"
 version = "0.1.0"
 description = "Генератор PDF-отчётов по активности из GitLab, Jira, Redmine и Confluence"
 authors = [
-  { name="hawkab", email="hwakaba@ya.ru" }
+  { name="hawkab", email="hwakaba@yandex.kz" }
 ]
 readme = "README.md"
 requires-python = ">=3.9"
