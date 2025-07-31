@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "work-report-generator"
+version = "0.1.0"
+description = "Генератор PDF-отчётов по активности из GitLab, Jira, Redmine и Confluence"
+authors = [
+  { name="hawkab", email="hwakaba@ya.ru" }
+]
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "MIT"}
+
+dependencies = [
+  "python-dotenv",
+  "reportlab",
+  "matplotlib",
+  "holidays",
+  "atlassian-python-api",
+  "python-redmine",
+  "qrcode",
+  "Pillow",
+  "colorlog",
+]
+
+[project.scripts]
+work-report = "report_generator.main:main"
+

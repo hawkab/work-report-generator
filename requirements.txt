@@ -1,0 +1,10 @@
+python-dotenv
+gitpython
+reportlab
+matplotlib
+holidays
+atlassian-python-api
+python-redmine
+qrcode
+Pillow
+colorlog
