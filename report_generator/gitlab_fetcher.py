@@ -51,7 +51,7 @@ def fetch_gitlab_events(start_date, end_date):
         return []
 
 
-def process_gitlab_events(events, start_date, end_date):
+def process_gitlab_events(events):
     grouped_by_date = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
     project_cache = {}
 
@@ -71,8 +71,6 @@ def process_gitlab_events(events, start_date, end_date):
 
     for event in events:
         raw_date = datetime.strptime(event.created_at.split('T')[0], "%Y-%m-%d")
-        if not (start_date <= raw_date.date() <= end_date):
-            continue
 
         date = raw_date.strftime("%d.%m.%Y")
         action = event.action_name
