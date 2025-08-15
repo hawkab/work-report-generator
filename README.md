@@ -1,50 +1,51 @@
 # 🧾 Work Report Generator
+EN | [RU](README_ru.md)
 
-**Work Report Generator** — это инструмент на Python, предназначенный для автоматической генерации PDF-отчётов о проделанной работе на основе активности из GitLab, JIRA, Confluence и Redmine.
+**Work Report Generator** is a Python tool designed for automatically generating PDF work reports based on activity from GitLab, JIRA, Confluence, and Redmine.
 
-Он собирает действия пользователя за указанный период, группирует их по дням, добавляет дополнительные активности (дейлики, планирования и ретро), визуализирует статистику и формирует отчёт в виде PDF-файла. По желанию отчёт можно автоматически отправить по электронной почте или загрузить на FTP.
-
----
-
-## ⚙️ Минимальные системные требования
-
-| Компонент         | Требование                            |
-|------------------|----------------------------------------|
-| Python           | 3.9 или выше                           |
-| Зависимости      | см. [`requirements.txt`](/requirements.txt) или [`pyproject.toml`](/pyproject.toml) |
-| Шрифт            | Файл `DejaVuSans.ttf` для PDF (опционально) |
+It collects user actions for a specified period, groups them by day, adds additional activities (daily meetings, planning sessions, and retrospectives), visualizes statistics, and creates a PDF report. Optionally, the report can be automatically sent by email or uploaded to FTP.
 
 ---
 
-## 📦 Установка
+## ⚙️ Minimum System Requirements
 
-1. Клонируйте репозиторий:
+| Component        | Requirement                              |
+|------------------|------------------------------------------|
+| Python           | 3.9 or higher                            |
+| Dependencies     | see [`requirements.txt`](/requirements.txt) or [`pyproject.toml`](/pyproject.toml) |
+| Font             | `DejaVuSans.ttf` file for PDF (optional) |
+
+---
+
+## 📦 Installation
+
+1. Clone the repository:
    ```bash
    git clone https://github.com/hawkab/work-report-generator.git
    cd work-report-generator
    ```
 
-2. Установите зависимости так:
+2. Install dependencies either via:
    ```bash
    pip install .
    ```
 
-   Или так:
+   Or:
    ```bash
    pip install -r requirements.txt
    ```
 
 ---
 
-## 🛠 Настройка
+## 🛠 Configuration
 
-1. Получите API-токены для всех используемых систем ([`GitLab`](https://specialistoff.net/question/773), [`Jira`](https://support.atlassian.com/atlassian-account/docs/manage-api-tokens-for-your-atlassian-account/), Confluence, [`Redmine`](https://www.redmine.org/boards/2/topics/53956/))
+1. Obtain API tokens for all used systems ([`GitLab`](https://specialistoff.net/question/773), [`Jira`](https://support.atlassian.com/atlassian-account/docs/manage-api-tokens-for-your-atlassian-account/), Confluence, [`Redmine`](https://www.redmine.org/boards/2/topics/53956/))
 
-2. Опционально: Получите параметры SMTP для отправки email (если требуется отправка на email отчётов)
+2. Optional: Obtain SMTP parameters for sending reports via email
 
-3. Опционально: Получите параметры FTP (если требуется загрузка на ftp отчётов)
+3. Optional: Obtain FTP parameters for uploading reports to an FTP server
 
-4. Создайте файл `.env` в корне проекта или в домашней директории, на основе шаблона [`.env.example`](/.env.example):
+4. Create a `.env` file in the project root or in your home directory, based on the [`.env.example`](/.env.example) template:
 
    ```dotenv
    ...
@@ -53,21 +54,22 @@
    GITLAB_USERNAME=username
    ...
    ```
-5. Настройка отпусков 📆 (`vacations.json`))
 
-Если в определённые дни вы не работали (например, были в отпуске, на больничном или в отгуле), вы можете указать эти даты в файле `vacations.json`, чтобы:
+5. Vacation settings 📆 (`vacations.json`)
 
-- избежать генерации статической активности в эти дни;
-- не включать их в отчёт;
-- корректно отражать периоды отсутствия.
+If you did not work on certain days (e.g., vacation, sick leave, or day off), you can list these dates in the `vacations.json` file to:
 
-#### 📁 Расположение
+- avoid generating static activity for those days;
+- exclude them from the report;
+- accurately reflect absence periods.
 
-Файл `vacations.json` должен находиться в корне проекта
+#### 📁 Location
 
-#### 🧾 Формат файла
+The `vacations.json` file should be located in the project root.
 
-Файл представляет собой JSON-массив объектов с ключами `from` и `to` в формате `YYYY-MM-DD`.
+#### 🧾 File Format
+
+The file should be a JSON array of objects with `from` and `to` keys in `YYYY-MM-DD` format.
 
 ```json
 [
@@ -82,19 +84,19 @@
 ]
 ```
 
-> 🔄 Если `from` и `to` совпадают, это считается однодневным отсутствием.
+> 🔄 If `from` and `to` are the same, it is considered a single-day absence.
 
 ---
 
-## 🚀 Использование
+## 🚀 Usage
 
-### Формирование отчёта за определённый период:
+### Generate a report for a specific period:
 
 ```bash
 work-report --start 01.07.2025 --end 31.07.2025
 ```
 
-### Формирование с отправкой отчёта по email и загрузкой на FTP:
+### Generate and send the report via email and upload it to FTP:
 
 ```bash
 work-report --start 01.07.2025 --end 31.07.2025 --email --ftp
@@ -102,23 +104,49 @@ work-report --start 01.07.2025 --end 31.07.2025 --email --ftp
 
 ---
 
-## 📁 Результат
+## 📁 Output
 
-- PDF-файл будет сохранён в рабочей директории `./report_generator/reports`
-- Название файла: `work_report_ГГГГ-ММ-ДД_ГГГГ-ММ-ДД.pdf`
-- [`Пример отчёта`](/report_generator/report_example/work_report_2025-07-07_2025-07-11.pdf)
+- The PDF file will be saved in the working directory `./report_generator/reports`
+- File name format: `work_report_YYYY-MM-DD_YYYY-MM-DD.pdf`
+- [`Example report`](/report_generator/report_example/work_report_2025-07-07_2025-07-11.pdf)
 - ![img.png](report_generator/report_example/report_example_start.png)
 - ![img.png](report_generator/report_example/report_example_end.png)
+
 ---
 
-## 🤝 Благодарности
+## Additional Notes
+- To view the report archive, you can use Google Drive or your own hosting with a [PHP script](https://github.com/hawkab/php-secure-report-viewer)
+- To upload reports from `ftp` to Google Drive, you can use `rclone`:
 
-- [`python-dotenv`](https://github.com/theskumar/python-dotenv) — загрузка конфигурации из `.env` файлов.
-- [`reportlab`](https://pypi.org/project/reportlab/) — генерация PDF-документов.
-- [`qrcode`](https://pypi.org/project/qrcode/) — генерация QR-кодов.
-- [`colorlog`](https://github.com/borntyping/python-colorlog) — цветной вывод логов в терминал.
-- [`python-redmine`](https://github.com/maxtepkeev/python-redmine) — взаимодействие с Redmine через REST API.
-- [`python-gitlab`](https://github.com/python-gitlab/python-gitlab) — работа с API GitLab.
-- [`pytest`](https://docs.pytest.org/) — для тестирования компонентов проекта.
+1. Install rclone:
+```bash
+curl https://rclone.org/install.sh | sudo bash
+```
+2. Configure Google Drive:
+```bash
+rclone config
+```
+- n (new connection)
+- name, e.g.: gdrive
+- type: Google Drive
+- complete browser authorization.
+3. Copy files from FTP to Google Drive:
 
-Огромное спасибо авторам этих библиотек за их вклад в open source 💚
+```bash
+rclone copy ftpuser:password@ftp.example.com:/path gdrive:/Backup --progress
+```
+
+---
+
+## 🤝 Acknowledgments
+
+- [`python-dotenv`](https://github.com/theskumar/python-dotenv) — loading configuration from `.env` files.
+- [`reportlab`](https://pypi.org/project/reportlab/) — PDF generation.
+- [`qrcode`](https://pypi.org/project/qrcode/) — QR code generation.
+- [`colorlog`](https://github.com/borntyping/python-colorlog) — colored log output in the terminal.
+- [`python-redmine`](https://github.com/maxtepkeev/python-redmine) — interacting with Redmine via REST API.
+- [`python-gitlab`](https://github.com/python-gitlab/python-gitlab) — interacting with GitLab API.
+- [`pytest`](https://docs.pytest.org/) — for testing project components.
+
+Many thanks to the authors of these libraries for their contribution to open source 💚
+
