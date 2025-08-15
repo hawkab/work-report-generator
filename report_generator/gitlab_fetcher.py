@@ -56,17 +56,17 @@ def process_gitlab_events(events):
     project_cache = {}
 
     action_translations = {
-        'pushed to': 'Git: Работал над задачей',
-        'pushed new': 'Git: Начал новую задачу',
-        'opened': 'Git: Оформил новый MR',
-        'approved': 'Git: Согласовал изменения',
-        'accepted': 'Git: Принял работу по задаче',
-        'commented on': 'Git: Провёл code-review',
+        'pushed to': 'Работал над задачей',
+        'pushed new': 'Начал новую задачу',
+        'opened': 'Оформил новый MR',
+        'approved': 'Согласовал изменения',
+        'accepted': 'Принял работу по задаче',
+        'commented on': 'Провёл code-review',
         'deleted': 'Оптимизация',
         'merged': 'Объединил изменения в основную ветку',
-        'closed': 'Git: Закрыл задачу/запрос',
-        'created': 'Git: Создание/загрузка',
-        'joined': 'Git: Доступ',
+        'closed': 'Закрыл задачу/запрос',
+        'created': 'Создание/загрузка',
+        'joined': 'Доступ',
     }
 
     for event in events:
@@ -100,7 +100,7 @@ def process_gitlab_events(events):
             commit_id = event.push_data.get('commit_to', 'работа над задачей')
             details = f"Работа в ветке '{ref}' commit to: {commit_id}"
 
-        grouped_by_date[date][action_desc][(shorten_name_auto(project_name), details)].append(event)
+        grouped_by_date[date]['GIT'][(shorten_name_auto(project_name), action_desc + ' - ' + details)].append(event)
 
     return grouped_by_date
 
