@@ -28,7 +28,7 @@ def main():
         logger.info(f"Обработка недели: {week_start.strftime('%d.%m.%Y')} — {week_end.strftime('%d.%m.%Y')}")
 
         gitlab_events = fetch_gitlab_events(week_start, week_end)
-        grouped_gitlab = process_gitlab_events(gitlab_events, week_start, week_end)
+        grouped_gitlab = process_gitlab_events(gitlab_events)
 
         jira_activities = fetch_jira_activity(week_start, week_end)
         confluence_activities = fetch_confluence_activity(week_start, week_end)
