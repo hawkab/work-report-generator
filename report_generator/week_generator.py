@@ -34,7 +34,7 @@ def get_week_ranges(start_date, end_date, vacations_list=None):
 
 def ensure_full_week(grouped_by_date, week_start, week_end, vacations_list=None):
     """
-    Добавляет плановые события для рабочих дней недели.
+    Добавляет ежедневные плановые события и случайные активности для каждого рабочего дня недели.
     """
     if vacations_list is None:
         vacations_list = vacations
@@ -54,19 +54,19 @@ def ensure_full_week(grouped_by_date, week_start, week_end, vacations_list=None)
         date_dt = datetime.strptime(date_str, "%d.%m.%Y")
         weekday = date_dt.weekday()
 
-        grouped_by_date[date_str]["Ежедневная планёрка"][("ПРОЕКТ", "Участие в командной планёрке, координация задач")]\
+        grouped_by_date[date_str]["Проектные активности"][("ПРОЕКТ", "Участие в ежедневной командной планёрке, координация задач")]\
             .append("static")
         grouped_by_date[date_str]["Мониторинг"][("ПРОЕКТ", "Контроль метрик, состояния серверов и логов")]\
             .append("static")
 
         if weekday == 0:
-            grouped_by_date[date_str]["Планирование работы"][("ПРОЕКТ", "Оценка задач, постановка приоритетов")]\
+            grouped_by_date[date_str]["Проектные активности"][("ПРОЕКТ", "Планирование работы: Оценка задач, постановка приоритетов")]\
                 .append("static")
-            grouped_by_date[date_str]["Отчётность"][("ПРОЕКТ", "Подготовка отчёта за прошлую неделю")]\
+            grouped_by_date[date_str]["Проектные активности"][("ПРОЕКТ", "Подготовка отчёта за прошлую неделю")]\
                 .append("static")
 
         if weekday == 4:
-            grouped_by_date[date_str]["Ретроспектива недели"][("ПРОЕКТ", "Обсуждение итогов недели, выводы")]\
+            grouped_by_date[date_str]["Проектные активности"][("ПРОЕКТ", "Ретроспектива недели: Обсуждение итогов недели, выводы")]\
                 .append("static")
 
 
