@@ -3,7 +3,7 @@ from collections import defaultdict
 from .utils import shorten_name_auto, wrap_text
 from .config import logger, GITLAB_URL, GITLAB_TOKEN, GITLAB_USERNAME
 import traceback
-
+import pytz
 import gitlab
 
 gl = gitlab.Gitlab(GITLAB_URL, private_token=GITLAB_TOKEN)
@@ -70,7 +70,8 @@ def process_gitlab_events(events):
     }
 
     for event in events:
-        raw_date = datetime.strptime(event.created_at.split('T')[0], "%Y-%m-%d")
+        raw_date_time = convert_utc_to_moscow(event.created_at)
+        raw_date = raw_date_time.date()
 
         date = raw_date.strftime("%d.%m.%Y")
         action = event.action_name
@@ -104,3 +105,11 @@ def process_gitlab_events(events):
 
     return grouped_by_date
 
+def convert_utc_to_moscow(utc_string):
+    """Конвертирует строку UTC формата 2025-08-23T22:38:15.651Z в московское время"""
+    utc_datetime = datetime.fromisoformat(utc_string.replace('Z', '+00:00'))
+
+    moscow_tz = pytz.timezone('Europe/Moscow')
+    moscow_time = utc_datetime.astimezone(moscow_tz)
+
+    return moscow_time
