@@ -1,209 +1,171 @@
+import os
 from datetime import datetime
 from io import BytesIO
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
+import tempfile
+
+from jinja2 import Environment, FileSystemLoader
+from weasyprint import HTML
+
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-from matplotlib import colormaps
-from reportlab.platypus import (
-    SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
-)
-from reportlab.lib import colors
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.lib.pagesizes import letter
-import os
 import qrcode
-from reportlab.lib.utils import ImageReader
-from .utils import wrap_text
+from itertools import groupby
+from operator import itemgetter
 from .config import logger
 
-PAGE_WIDTH = 550
-MAIN_FONT = "DejaVuSans"
-PDF_OUTPUT_DIR = "./report_generator/reports"
+weekday_names = ['понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота', 'воскресенье']
 
-# Регистрация шрифта
-try:
-    pdfmetrics.registerFont(TTFont(MAIN_FONT, "DejaVuSans.ttf"))
-except Exception:
-    MAIN_FONT = "Helvetica"
-    logger.warning("Шрифт DejaVu не найден. Используется Helvetica.")
+def _parse_date(d):
+    return datetime.strptime(d, "%d.%m.%Y")
 
-def generate_qr_code(url: str) -> BytesIO:
-    """
-    Генерирует QR-код для указанной ссылки и возвращает BytesIO объект с изображением.
-    """
-    qr = qrcode.QRCode(
-        version=1,
-        box_size=2,
-        border=2
-    )
-    qr.add_data(url)
-    qr.make(fit=True)
-    img = qr.make_image(fill_color="black", back_color="white")
+def flatten_details(grouped):
+    rows = []
+    for date in sorted(grouped.keys(), key=_parse_date):
+        weekday_ru = weekday_names[datetime.strptime(date, "%d.%m.%Y").weekday()]
+        for act, details in grouped[date].items():
+            for (proj, msg), _ in details.items():
+                rows.append({
+                    "date": date + f" ({weekday_ru})",
+                    "action": act,
+                    "project": proj,
+                    "details": msg
+                })
+    return rows
 
-    buffer = BytesIO()
-    img.save(buffer, format="PNG")
-    buffer.seek(0)
-    return buffer
-    
-def setup_styles():
-    styles = getSampleStyleSheet()
-    styles.add(ParagraphStyle('MainHeader', fontName=MAIN_FONT, fontSize=12, textColor=colors.darkblue, spaceAfter=12))
-    styles.add(ParagraphStyle('SectionHeader', fontName=MAIN_FONT, fontSize=10, textColor=colors.darkblue, spaceAfter=8))
-    styles['Normal'].fontName = MAIN_FONT
-    styles['Normal'].fontSize = 8
-    styles.add(ParagraphStyle(name='RightAligned', fontName=MAIN_FONT, fontSize=8, alignment=2, leading=10))
-    return styles
+def group_details(details_sorted):
+    grouped = OrderedDict()
+    for date, rows in groupby(details_sorted, key=itemgetter("date")):
+        grouped[date] = list(rows)
+    return grouped
 
+def calc_summary(grouped):
+    c_type = defaultdict(int)
+    c_proj = defaultdict(int)
+    days = []
+    totals = []
 
-def create_pie_chart_from_grouped_data(grouped_by_date):
-    action_counter = defaultdict(int)
-    for actions in grouped_by_date.values():
-        for action, details in actions.items():
-            action_counter[action] += len(details)
+    for date in sorted(grouped.keys(), key=_parse_date):
+        dt = _parse_date(date)
+        weekday = ["пн","вт","ср","чт","пт","сб","вс"][dt.weekday()]
+        days.append(weekday)
+        per = 0
+        for act, details in grouped[date].items():
+            for (proj,_),_ in details.items():
+                c_type[act]+=1
+                c_proj[proj]+=1
+                per+=1
+        totals.append(per)
 
-    labels = list(action_counter.keys())
-    sizes = list(action_counter.values())
+    main_proj = max(c_proj.items(), key=lambda kv:kv[1])[0] if c_proj else "—"
+    main_act = max(c_type.items(), key=lambda kv:kv[1])[0] if c_type else "—"
+    proj_pct = round((c_proj.get(main_proj,0)/(sum(c_proj.values()) or 1))*100)
+    act_pct = round((c_type.get(main_act,0)/(sum(c_type.values()) or 1))*100)
 
-    fig, ax = plt.subplots()
-    cmap = colormaps.get_cmap('tab20').resampled(len(sizes))
-    colors_pie = [cmap(i) for i in range(len(sizes))]
+    return OrderedDict(sorted(c_type.items())), days, totals, main_proj, proj_pct, main_act, act_pct
 
-    wedges, texts, autotexts = ax.pie(
-        sizes,
-        labels=labels,
-        colors=colors_pie,
-        autopct='%1.1f%%',
-        startangle=140,
-        textprops={'fontsize': 6}
-    )
-    ax.axis('equal')
+# ---------- Графики и QR ----------
+CHART_COLORS = [
+    "#3498db","#2ecc71","#e67e22","#e74c3c",
+    "#9b59b6","#1abc9c","#f39c12","#7f8c8d"
+]
 
-    ax.legend(
-        wedges, labels, title="Типы работ", loc="lower center",
-        bbox_to_anchor=(0.5, -0.4), fontsize=6, title_fontsize=7, ncol=2
-    )
-
-    buf = BytesIO()
-    plt.savefig(buf, format='png', dpi=150, bbox_inches='tight')
+def chart_doughnut(counts: OrderedDict, path: str):
+    labels = list(counts.keys()); vals = list(counts.values()) or [1]
+    fig,ax = plt.subplots(figsize=(4.5,3.2),dpi=120)
+    ax.pie(vals,labels=labels,autopct='%1.0f%%',
+           colors=CHART_COLORS[:len(vals)],startangle=90,
+           wedgeprops=dict(width=0.5,edgecolor="white"),
+           textprops={'fontsize':8})
+    ax.set(aspect="equal")
+    fig.savefig(path, format="png", dpi=150, bbox_inches="tight")
     plt.close(fig)
-    buf.seek(0)
-    return buf
 
+def chart_line(days, totals, path: str):
+    fig,ax = plt.subplots(figsize=(4.5,3.2),dpi=120)
+    ax.plot(days,totals,linewidth=2,marker="o",color=CHART_COLORS[0])
+    ax.fill_between(days,totals,alpha=0.2,color=CHART_COLORS[0])
+    ax.set_ylabel("Активности"); ax.grid(True,alpha=0.2)
+    fig.savefig(path, format="png", dpi=150, bbox_inches="tight")
+    plt.close(fig)
 
-def generate_pdf(grouped_by_date, report_start_date, report_end_date, output_path=None):
+def generate_qr_code(url: str, path: str):
+    qr = qrcode.QRCode(version=1,box_size=3,border=2)
+    qr.add_data(url or "#"); qr.make(fit=True)
+    img = qr.make_image(fill_color="black",back_color="white")
+    img.save(path)
+
+# ---------- Основной генератор ----------
+def generate_pdf(grouped_by_date, start_date, end_date,
+                 output_path=None, total_hours="40.0 ч", work_schedule="Пн–Пт, 09:00–18:00"):
     if output_path is None:
-        filename = f"work_report_{report_start_date}_{report_end_date}.pdf"
-        output_path = os.path.join(PDF_OUTPUT_DIR, filename)
+        fn = f"work_report_{start_date:%Y-%m-%d}_{end_date:%Y-%m-%d}.pdf"
+        output_path = os.path.join("./report_generator/reports", fn)
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
-    styles = setup_styles()
-    story = []
+    # ENV переменные
+    context = {
+        "org_name": os.getenv("PDF_HEADER_ISSUER_ORG_NAME","Организация"),
+        "employee_name": os.getenv("PDF_HEADER_ISSUER_NAME","—"),
+        "employee_position": os.getenv("PDF_HEADER_ISSUER_POSITION","—"),
+        "employee_dep": os.getenv("PDF_HEADER_ISSUER_DEP","—"),
+        "manager_name": os.getenv("PDF_HEADER_ISSUER_MANAGER","—"),
+        "archive_url": os.getenv("REPORTS_ARCHIVE_URL","#"),
+    }
 
-    # Заголовок
-    header_info = [
-        f'ФИО: {os.getenv("PDF_HEADER_ISSUER_NAME")}',
-        f'email: <a href="mailto:{os.getenv("PDF_HEADER_ISSUER_EMAIL")}">{os.getenv("PDF_HEADER_ISSUER_EMAIL")}</a>',
-        f"Должность: {os.getenv('PDF_HEADER_ISSUER_POSITION')},",
-        f'Отдел {os.getenv("PDF_HEADER_ISSUER_DEP")}',
-        f'Организация: {os.getenv("PDF_HEADER_ISSUER_ORG_NAME")}',
-        f'Руководитель: {os.getenv("PDF_HEADER_ISSUER_MANAGER")}'
-    ]
-    header_table = Table([[Paragraph("<br/>".join(header_info), styles["RightAligned"])]],
-                         colWidths=[PAGE_WIDTH],
-                         hAlign='RIGHT')
-    header_table.setStyle(TableStyle([
-        ('ALIGN', (0, 0), (-1, -1), 'RIGHT'),
-        ('LEFTPADDING', (0, 0), (-1, -1), 0),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 0),
-        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-    ]))
-    story.extend([header_table, Spacer(1, 20)])
+    counts,days,totals,main_proj,proj_pct,main_act,act_pct = calc_summary(grouped_by_date)
+    details = flatten_details(grouped_by_date)
+    grouped_details = group_details(details)
 
-    # Заголовок отчёта
-    story.append(Paragraph(
-        f"<b>Отчёт о выполненной работе с {report_start_date.strftime('%d.%m.%Y')} по {report_end_date.strftime('%d.%m.%Y')}</b>",
-        styles["MainHeader"]
-    ))
-    story.append(Spacer(1, 12))
+    # --- Новая аналитика ---
+    total_tasks = sum(totals)
+    work_days = len(days) or 1
 
-    # Круговая диаграмма
-    pie_buf = create_pie_chart_from_grouped_data(grouped_by_date)
-    pie_img = Image(pie_buf, width=400, height=300)
-    pie_img.hAlign = 'CENTER'
-    story.extend([pie_img, Spacer(1, 20)])
+    # Индекс деловой активности (BAI)
+    bai = round(total_tasks / work_days, 2)
 
-    # Дневная активность
-    date_width, type_width, project_width, details_width = 60, 120, 40, PAGE_WIDTH - 210
-    weekday_names = ['понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота', 'воскресенье']
-    sorted_dates = sorted(grouped_by_date.keys(), key=lambda d: datetime.strptime(d, "%d.%m.%Y"))
+    # Фокус на проекте (FI)
+    focus_index = proj_pct
 
-    for date in sorted_dates:
-        actions = grouped_by_date[date]
-        date_dt = datetime.strptime(date, "%d.%m.%Y")
-        weekday_ru = weekday_names[date_dt.weekday()]
-        weekday_color = 'red' if date_dt.weekday() > 4 else 'gray'
-        date_title = f"{date} <font size=6 color='{weekday_color}'>({weekday_ru})</font>"
+    # Полезная активность (PTS)
+    productive_types = {"GIT", "Анализ", "Confluence", "Консультация", "Помощь", "Мониторинг"}
+    productive_count = sum(v for k,v in counts.items() if k in productive_types)
+    productive_share = round((productive_count / (total_tasks or 1)) * 100, 1)
 
-        story.append(Paragraph(date_title, styles["SectionHeader"]))
+    with tempfile.TemporaryDirectory() as tmpdir:
+        pie_path  = os.path.join(tmpdir, "chart_pie.png")
+        line_path = os.path.join(tmpdir, "chart_line.png")
+        qr_path   = os.path.join(tmpdir, "qr.png")
 
-        data = [["Тип работ", "Проект", "Детали"]]
-        for action, details in actions.items():
-            for (project_name, msg), _ in details.items():
-                data.append([action, project_name, wrap_text(msg)])
+        chart_doughnut(counts, pie_path)
+        chart_line(days, totals, line_path)
+        generate_qr_code(context["archive_url"], qr_path)
 
-        table = Table(data, colWidths=[type_width, project_width, details_width])
-        table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
-            ('FONTNAME', (0, 0), (-1, -1), MAIN_FONT),
-            ('FONTSIZE', (0, 0), (-1, -1), 7),
-            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-            ('LEFTPADDING', (0, 0), (-1, -1), 3),
-            ('RIGHTPADDING', (0, 0), (-1, -1), 3),
-            ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
-        ]))
-        story.extend([table, Spacer(1, 12)])
+        context.update({
+            "period": f"{start_date:%d.%m.%Y} — {end_date:%d.%m.%Y}",
+            "total_hours": total_hours,
+            "work_schedule": work_schedule,
+            "main_project": main_proj,
+            "main_activity": main_act,
+            "main_activity_pct": act_pct,
+            "chart_pie": pie_path,
+            "chart_line": line_path,
+            "grouped_details": grouped_details,
+            "qr_path": qr_path,
+            "generated_at": datetime.now().strftime("%d.%m.%Y %H:%M:%S"),
+            # --- Новые KPI ---
+            "bai": bai,
+            "focus_index": focus_index,
+            "productive_share": productive_share,
+        })
 
-    # Заключение
-    story.append(Paragraph("Начало и окончание рабочего дня — с 09:00 по 18:00", styles["SectionHeader"]))
-    story.append(Spacer(1, 10))
-    disclaimer = (
-        '* Отчёт составлен в информационных целях на основе технических данных и воспоминаний сотрудника. '
-        'Некоторые виды активности могли не попасть в отчёт. Возможны неточности, частичные или обобщённые формулировки.'
-    )
-    
+        template_loader = FileSystemLoader(searchpath='./report_generator/')
+        template_env = Environment(loader=template_loader)
+        template = template_env.get_template("report_template.html")
+        html_out = template.render(**context)
 
-    doc = SimpleDocTemplate(
-        output_path,
-        pagesize=letter,
-        leftMargin=40, rightMargin=40,
-        topMargin=40, bottomMargin=40
-    )
-    
-    archive_url = os.getenv("REPORTS_ARCHIVE_URL", "#")
-    qr_buf = generate_qr_code(archive_url)
-    qr_img = Image(qr_buf, width=80, height=80)
-
-    qr_text = [
-        Paragraph(f'<para align="left"><b><a href="{archive_url}">Архив отчётов о проделанной работе</a></b></para>', styles["Normal"]),
-        Spacer(1, 4),
-        Paragraph('<font size=6 color="gray">* Для перехода по ссылке отсканируйте QR-код слева</font>', styles["Normal"])
-    ]
-
-    qr_table = Table([[qr_img, qr_text]], colWidths=[95, PAGE_WIDTH - 300])
-    qr_table.setStyle(TableStyle([
-        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ('LEFTPADDING', (0, 0), (-1, -1), 0),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 0),
-    ]))
-
-    story.append(Spacer(1, 20))
-    story.append(qr_table)
-    story.append(Spacer(1, 15))
-    story.append(Paragraph(f'<font size=6 color="gray">{disclaimer}</font>', styles["Normal"]))
-    
-    doc.build(story)
+        HTML(string=html_out, base_url=os.getcwd()).write_pdf(output_path)
 
     logger.info(f"PDF-отчёт успешно сгенерирован: file://{os.path.abspath(output_path)}")
     return output_path
-

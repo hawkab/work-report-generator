@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Еженедельный отчёт о проделанной работе</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 2mm;
+        }
+        body {
+            font-family: "DejaVu Sans", "Segoe UI", sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #f4f6f9;
+            color: #333;
+            font-size: 12px;
+        }
+
+        header {
+            background: white;
+            padding: 20px 40px;
+            border-bottom: 2px solid #2c3e50;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .org-title {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        header h1 {
+            margin: 0;
+            font-size: 18px;
+            color: #2c3e50;
+        }
+
+        .container {
+            margin: 10px;
+        }
+
+        .info-block {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+            padding: 15px 20px;
+            margin-bottom: 20px;
+        }
+        .info-block p {
+            margin: 4px 0;
+            font-size: 13px;
+        }
+
+        .cards {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .card {
+            flex: 1;
+            background: #fff;
+            border-radius: 10px;
+            padding: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .card h3 {
+            margin: 0;
+            font-size: 12px;
+            text-transform: uppercase;
+            color: #2c3e90;
+        }
+        .card p {
+            margin: 6px 0 0 0;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .card small {
+            color: #777;
+            font-size: 11px;
+        }
+
+        .charts-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .chart {
+            flex: 1;
+            background: #fff;
+            border-radius: 10px;
+            padding: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .chart img {
+            max-width: 100%;
+            max-height: 200px;
+            object-fit: contain;
+        }
+
+        .details {
+            background: #fff;
+            border-radius: 10px;
+            padding: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+            margin-top: 10px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 6px;
+            text-align: left;
+        }
+        th {
+            background: #2c3e50;
+            color: #fff;
+        }
+        tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+
+        footer {
+            margin: 40px;
+            font-size: 11px;
+            color: #777;
+            text-align: center;
+        }
+        .qr {
+            margin: 20px 0;
+        }
+        .qr img {
+            width: 80px;
+            height: 80px;
+        }
+        .progress {
+            width: 100%;
+            background: #eee;
+            border-radius: 6px;
+            overflow: hidden;
+            height: 8px;
+            margin: 4px 0 6px 0;
+        }
+        .progress-bar {
+            height: 8px;
+            background: linear-gradient(90deg, #2ecc71, #27ae60);
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="org-title">{{ org_name }}</div>
+    <h1>Еженедельный отчёт о проделанной работе</h1>
+</header>
+
+<div class="container">
+
+    <div class="info-block">
+        <p><b>Период:</b> {{ period }}</p>
+        <p><b>Сотрудник:</b> {{ employee_name }} ({{ employee_position }}, {{ employee_dep }})</p>
+        <p><b>Руководитель:</b> {{ manager_name }}</p>
+    </div>
+
+    <!-- Блок 1: основные KPI -->
+    <div class="cards">
+        <div class="card">
+            <h3>Общее время</h3>
+            <p>{{ total_hours }}</p>
+            <small>{{ work_schedule }}</small>
+        </div>
+        <div class="card">
+            <h3>Основной проект</h3>
+            <p>{{ main_project }}</p>
+        </div>
+        <div class="card">
+            <h3>Основная активность</h3>
+            <p>{{ main_activity }}</p>
+            <small>{{ main_activity_pct }}% рабочего времени</small>
+        </div>
+    </div>
+
+    <!-- Блок 2: аналитические индексы -->
+    <div class="cards">
+        <div class="card">
+            <h3>Индекс деловой активности (BAI)</h3>
+            <p>{{ bai }}</p>
+            <small>Среднее число задач в день</small>
+        </div>
+        <div class="card">
+            <h3>Фокус на проекте (FI)</h3>
+            <p>{{ focus_index }}%</p>
+            <div class="progress">
+                <div class="progress-bar" style="width: {{ focus_index }}%;"></div>
+            </div>
+            <small>Доля основного проекта</small>
+        </div>
+        <div class="card">
+            <h3>Полезная активность (PTS)</h3>
+            <p>{{ productive_share }}%</p>
+            <div class="progress">
+                <div class="progress-bar" style="width: {{ productive_share }}%;"></div>
+            </div>
+            <small>Доля продуктивных задач</small>
+        </div>
+    </div>
+
+
+    <div class="charts-row">
+        <div class="chart">
+            <h3>Распределение типов работ</h3>
+            <img src="{{ chart_pie }}">
+        </div>
+        <div class="chart">
+            <h3>Активности по дням</h3>
+            <img src="{{ chart_line }}">
+        </div>
+    </div>
+
+    <div class="details">
+        <h3>Детализация по дням</h3>
+        <table>
+            <thead>
+            <tr>
+                <th>Тип работ</th>
+                <th>Проект</th>
+                <th>Детали</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for date, rows in grouped_details.items() %}
+            <tr><td colspan="3"><b>{{ date }}</b></td></tr>
+            {% for row in rows %}
+            <tr>
+                <td>{{ row.action }}</td>
+                <td>{{ row.project }}</td>
+                <td>{{ row.details }}</td>
+            </tr>
+            {% endfor %}
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+<footer>
+    <div class="qr">
+        <p><b><a href="{{ archive_url }}">Архив отчётов о проделанной работе</a></b></p>
+        <img src="{{ qr_path }}">
+        <p><small>* Для перехода по ссылке отсканируйте QR-код</small></p>
+    </div>
+    <p>* Отчёт составлен в информационных целях на основе технических данных и воспоминаний сотрудника.
+        Некоторые виды активности могли не попасть в отчёт. Возможны неточности, частичные или обобщённые формулировки.</p>
+    <p>Сгенерировано: {{ generated_at }}</p>
+</footer>
+
+</body>
+</html>
