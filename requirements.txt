@@ -8,3 +8,5 @@ python-redmine
 qrcode
 Pillow
 colorlog
+jinja2
+weasyprint
