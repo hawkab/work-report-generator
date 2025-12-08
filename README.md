@@ -110,7 +110,6 @@ work-report --start 01.07.2025 --end 31.07.2025 --email --ftp
 - File name format: `work_report_YYYY-MM-DD_YYYY-MM-DD.pdf`
 - [`Example report`](/report_generator/report_example/work_report_2025-07-07_2025-07-11.pdf)
 - ![img.png](report_generator/report_example/report_example_start.png)
-- ![img.png](report_generator/report_example/report_example_end.png)
 
 ---
 

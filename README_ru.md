@@ -109,7 +109,6 @@ work-report --start 01.07.2025 --end 31.07.2025 --email --ftp
 - Название файла: `work_report_ГГГГ-ММ-ДД_ГГГГ-ММ-ДД.pdf`
 - [`Пример отчёта`](/report_generator/report_example/work_report_2025-07-07_2025-07-11.pdf)
 - ![img.png](report_generator/report_example/report_example_start.png)
-- ![img.png](report_generator/report_example/report_example_end.png)
 ---
 
 ## 🤝 Благодарности
