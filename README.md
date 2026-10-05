@@ -7,6 +7,10 @@ It collects user actions for a specified period, groups them by day, adds additi
 
 ---
 
+[![Support this project · TON network](https://hawkab.github.io/support/support-button.svg)](https://hawkab.github.io/support/)
+
+Optional contributions support development, maintenance and testing. The [support page](https://hawkab.github.io/support/) has a QR code, wallet link and copy buttons, and works on computers and phones. You choose the amount in your wallet.
+
 ## ⚙️ Minimum System Requirements
 
 | Component        | Requirement                              |
